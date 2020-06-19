@@ -168,6 +168,54 @@ class CPU:
                 self.sp += 1
                 self.pc +=2
 
+            # CALL, or Call; Call a subroutine
+            elif self.ir == 0b01010000:
+                return_address = self.pc + 2 # The register slot holding our subroutine's returned value
+                self.sp -= 1 # Decrementing the stack pointer
+                self.ram[self.sp] = return_address # Our stack is now the return address
+                reg = self.ram[self.pc+1] # The register holding the called function 
+                subroutine_location = self.reg[reg] # Grabbing subrouting location
+                self.pc = subroutine_location # Program counter is now set to execute subroutine
+
+            # RET, or Return; Return from subroutine
+            elif self.ir == 0b00010001:
+                return_address = self.ram[self.sp] # Taking value from top of stack (our subroutine value)
+                self.sp += 1 # Increment the stack pointer, return to code prior to call
+                self.pc = return_address # Set program counter to return address
+
+            # CMP, or Compare; Compare the next two values
+            elif self.ir == 0b10100111:
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+                self.alu("CMP", operand_a, operand_b) #call ALU function's CMP command
+                self.pc += 3
+
+            # JMP, or Jump; Jump the Program Counter to another location    
+            elif self.ir == 0b01010100:
+                address = self.ram_read(self.pc + 1)
+                self.pc = self.reg[address]
+
+            # JEQ, or Jump if Equal; If equal flag is set to true, jump to the address stored in the given register
+            elif self.ir == 0b01010101:
+                address = self.ram_read(self.pc + 1) # Address to travel to
+                if self.flag == 0b00000001: # If flag is equal
+                    self.pc = self.reg[address] # Jump to aforementioned address
+                else:
+                    self.pc +=2 # If not equal, skip command entirely
+            
+            
+            # JNE, or Jump if Not Equal; If equal flag is set to false, jump to another address
+            elif self.ir == 0b01010110:
+                #JNE FUNCTION
+                #the next value in the PC is the address to go to
+                #IF CMP function did NOT return an equal flag
+                address = self.ram_read(self.pc +1) # Address to travel to
+                if self.flag != 0b00000001:
+                    self.pc = self.reg[address] # Jump to aforementioned address
+                else:
+                    self.pc += 2 # Otherwise skip
+
+
             # If instruction unknown, print location for bug fixing
             else:
                 print(f"Unknown instruction {self.ir} at address {self.pc}")
